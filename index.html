@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Export Store</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .navbar {
+            background-color: #333;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .categories {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .category-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .category-btn:hover {
+            background-color: #666;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .product-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .product-info {
+            margin-top: 1rem;
+        }
+
+        .product-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-price {
+            color: #2ecc71;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-description {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .quantity-btn {
+            padding: 0.25rem 0.5rem;
+            border: none;
+            background-color: #eee;
+            cursor: pointer;
+        }
+
+        .add-to-cart {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .add-to-cart:hover {
+            background-color: #27ae60;
+        }
+
+        .cart {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            min-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .order-form {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            min-width: 300px;
+        }
+
+        .form-input, .form-select {
+            display: block;
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="categories">
+            <button class="category-btn" onclick="filterProducts('mcdonalds')">McDonald's</button>
+            <button class="category-btn" onclick="filterProducts('vanilla')">Vanilla</button>
+            <button class="category-btn" onclick="filterProducts('pizzeria')">Pizzeria</button>
+            <button class="category-btn" onclick="filterProducts('armeria')">Armeria</button>
+            <button class="category-btn" onclick="filterProducts('aci')">ACI</button>
+            <button class="category-btn" onclick="filterProducts('acquisto')">Materiale che acquistiamo</button>
+            <button class="category-btn" onclick="filterProducts('vendita')">Materiale che vendiamo</button>
+        </div>
+    </nav>
+
+    <div class="products-grid" id="products"></div>
+
+    <div class="cart" id="cart">
+        <h3>Carrello</h3>
+        <div id="cart-items"></div>
+        <div id="cart-total"></div>
+        <button class="submit-btn" onclick="showOrderForm()">Ordina</button>
+    </div>
+
+    <div class="order-form" id="orderForm">
+        <h3>Completa l'ordine</h3>
+        <div class="form-group">
+            <select class="form-select" id="identificationType" onchange="toggleIdentificationFields()">
+                <option value="">Seleziona tipo di identificazione</option>
+                <option value="nameAndSurname">Nome e Cognome</option>
+                <option value="faction">Fazione</option>
+            </select>
+        </div>
+
+        <div id="nameFields" class="form-group hidden">
+            <input type="text" class="form-input" id="fullName" placeholder="Nome e Cognome">
+        </div>
+
+        <div id="factionFields" class="form-group hidden">
+            <select class="form-select" id="factionSelect">
+                <option value="">Seleziona la fazione</option>
+                <option value="mcdonalds">McDonald's</option>
+                <option value="vanilla">Vanilla</option>
+                <option value="pizzeria">Pizzeria</option>
+                <option value="armeria">Armeria</option>
+                <option value="aci">ACI</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <input type="tel" class="form-input" id="phone" placeholder="Telefono">
+        </div>
+
+        <button class="submit-btn" onclick="submitOrder()">Conferma Ordinazione</button>
+    </div>
+
+    <script>
+        const products = {
+            mcdonalds: [
+                { id: 1, name: 'Acqua', price: 10, description: 'Descrizione', image: 'images/acqua.png' },
+                { id: 2, name: 'Caffe', price: 5, description: 'Descrizione', image: 'images/caffe.png' },
+                { id: 4, name: 'Coca Cola', price: 15, description: 'Descrizione', image: 'images/cocacola.png' },
+                { id: 5, name: 'Fanta', price: 15, description: 'Descrizione', image: 'images/fanta.png' },
+                { id: 6, name: 'the', price: 15, description: 'Descrizione', image: 'images/the.png' },
+                { id: 7, name: 'Sprite', price: 15, description: 'Descrizione', image: 'images/sprite.png' },
+                { id: 8, name: 'Succo di Uva', price: 20, description: 'Descrizione', image: 'images/succodiuva.png' },
+                { id: 9, name: 'Maionese', price: 10, description: 'Descrizione', image: 'images/maionese.png' },
+                { id: 10, name: 'Pane', price: 10, description: 'Descrizione', image: 'images/pane.png' },
+                { id: 11, name: 'Pesce', price: 10, description: 'Descrizione', image: 'images/pesce.png' },
+                { id: 12, name: 'Pollo Confezionato', price: 10, description: 'Descrizione', image: 'images/polloconfezionato.png' },
+                { id: 13, name: 'Insalata', price: 10, description: 'Descrizione', image: 'images/insalata.png' },
+                { id: 14, name: 'Ketchup', price: 10, description: 'Descrizione', image: 'images/ketchup.png' },
+                { id: 15, name: 'Carne', price: 10, description: 'Descrizione', image: 'images/carne.png' },
+            ],
+            vanilla: [
+                { id: 16, name: 'Acqua', price: 10, description: 'Descrizione', image: 'images/acqua.png' },
+                { id: 17, name: 'Caffe', price: 5, description: 'Descrizione', image: 'images/caffe.png' },
+                { id: 18, name: 'Birra', price: 20, description: 'Descrizione', image: 'images/birra.png' },
+                { id: 19, name: 'Coca Cola', price: 15, description: 'Descrizione', image: 'images/cocacola.png' },
+                { id: 20, name: 'Energy Drink', price: 10, description: 'Descrizione', image: 'images/energydrink.png' },
+                { id: 21, name: 'Fanta', price: 15, description: 'Descrizione', image: 'images/fanta.png' },
+                { id: 22, name: 'Frullato alla menta', price: 10, description: 'Descrizione', image: 'images/frullatoallamenta.png' },
+                { id: 23, name: 'Limonata', price: 10, description: 'Descrizione', image: 'images/limonata.png' },
+                { id: 34, name: 'Soda', price: 10, description: 'Descrizione', image: 'images/soda.png' },
+                { id: 35, name: 'the', price: 15, description: 'Descrizione', image: 'images/the.png' },
+                { id: 36, name: 'Sprite', price: 15, description: 'Descrizione', image: 'images/sprite.png' },
+                { id: 37, name: 'Succo di Uva', price: 20, description: 'Descrizione', image: 'images/succodiuva.png' },
+                { id: 38, name: 'Succo di Frutta', price: 10, description: 'Descrizione', image: 'images/succodifrutta.png' },
+                { id: 39, name: 'Vino', price: 50, description: 'Descrizione', image: 'images/vino.png' },
+                { id: 40, name: 'Vino Pregiato', price: 500, description: 'Descrizione', image: 'images/vinopregiato.png' },
+                { id: 41, name: 'Jegermeister', price: 10, description: 'Descrizione', image: 'images/jegermeister.png' },
+                { id: 42, name: 'Martini Bianco', price: 10, description: 'Descrizione', image: 'images/martinibianco.png' },
+                { id: 43, name: 'Tequila', price: 10, description: 'Descrizione', image: 'images/tequila.png' },
+                { id: 44, name: 'Vodka', price: 10, description: 'Descrizione', image: 'images/vodka.png' },
+                { id: 45, name: 'Dr. Pepper', price: 10, description: 'Descrizione', image: 'images/drpepper.png' },
+                { id: 46, name: 'Wisky', price: 10, description: 'Descrizione', image: 'images/wisky.png' },
+                { id: 47, name: 'Rhum', price: 10, description: 'Descrizione', image: 'images/rhum.png' },
+                { id: 48, name: 'Anacardi', price: 10, description: 'Descrizione', image: 'images/anacardi.png' },
+                { id: 49, name: 'Arachidi', price: 10, description: 'Descrizione', image: 'images/arachidi.png' },
+                { id: 50, name: 'Focaccia', price: 30, description: 'Descrizione', image: 'images/focaccia.png' },
+                { id: 51, name: 'Grappolo di Uva', price: 10, description: 'Descrizione', image: 'images/grappolodiuva.png' },
+                { id: 52, name: 'Patatine', price: 10, description: 'Descrizione', image: 'images/patatine.png' },
+                { id: 53, name: 'Pistacchi', price: 10, description: 'Descrizione', image: 'images/pistacchi.png' },
+                { id: 54, name: 'Salsiccia', price: 25, description: 'Descrizione', image: 'images/salsiccia.png' },
+                { id: 55, name: 'Sandwich', price: 30, description: 'Descrizione', image: 'images/sandwich.png' },
+                { id: 56, name: 'Ghiaccio', price: 10, description: 'Descrizione', image: 'images/ghiaccio.png' },
+            ],
+            pizzeria: [
+                { id: 57, name: 'Acqua', price: 10, description: 'Descrizione', image: 'images/acqua.png' },
+                { id: 58, name: 'Caffe', price: 5, description: 'Descrizione', image: 'images/caffe.png' },
+                { id: 59, name: 'Birra', price: 20, description: 'Descrizione', image: 'images/birra.png' },
+                { id: 60, name: 'Coca Cola', price: 15, description: 'Descrizione', image: 'images/cocacola.png' },
+                { id: 61, name: 'Fanta', price: 15, description: 'Descrizione', image: 'images/fanta.png' },
+                { id: 62, name: 'Sprite', price: 15, description: 'Descrizione', image: 'images/sprite.png' },
+                { id: 63, name: 'Succo di Uva', price: 20, description: 'Descrizione', image: 'images/succodiuva.png' },
+                { id: 64, name: 'the', price: 15, description: 'Descrizione', image: 'images/the.png' },
+                { id: 65, name: 'Vino', price: 50, description: 'Descrizione', image: 'images/vino.png' },
+                { id: 66, name: 'Vino Pregiato', price: 500, description: 'Descrizione', image: 'images/vinopregiato.png' },
+            ],
+            armeria: [
+                { id: 67, name: 'Maschera Sub', price: 250, description: 'Descrizione', image: 'images/submask.png' },
+                { id: 68, name: 'Maschera Gas', price: 250, description: 'Descrizione', image: 'images/gasmask.png' },
+                { id: 69, name: 'Munizioni', price: 25, description: 'Descrizione', image: 'images/9mm.png' },
+                { id: 70, name: 'Tirapugni', price: 250, description: 'Descrizione', image: 'images/tirapugni.png' },
+                { id: 71, name: 'Mazza da Baseball', price: 100, description: 'Descrizione', image: 'images/baseball.png' },
+                { id: 72, name: 'Flare', price: 125, description: 'Descrizione', image: 'images/flare.png' },
+                { id: 73, name: 'Serramanico', price: 175, description: 'Descrizione', image: 'images/serramanico.png' },
+                { id: 74, name: 'Pugnale', price: 225, description: 'Descrizione', image: 'images/pugnale.png' },
+                { id: 75, name: 'accetta', price: 225, description: 'Descrizione', image: 'images/accetta.png' },
+                { id: 76, name: 'Metal Detector', price: 125, description: 'Descrizione', image: 'images/metaldetector.png' },
+                { id: 77, name: 'Paracadute', price: 1500, description: 'Descrizione', image: 'images/paracadute.png' },
+                { id: 78, name: 'Piede di Porco', price: 175, description: 'Descrizione', image: 'images/piedeporco.png' },
+                { id: 79, name: 'Ascia da Battaglia', price: 50, description: 'Descrizione', image: 'images/asciadabattaglia.png' },
+            ],
+            aci: [
+                { id: 80, name: 'Kit di Riparazione', price: 500, description: 'Descrizione', image: 'images/kitdiriparazione.png' },
+                { id: 81, name: 'Bomb. Bianca', price: 500, description: 'Descrizione', image: 'images/bombabianca.png' },
+                { id: 82, name: 'Bomb. Blu', price: 500, description: 'Descrizione', image: 'images/bombablu.png' },
+                { id: 83, name: 'Bomb. Gialla', price: 500, description: 'Descrizione', image: 'images/bombagialla.png' },
+                { id: 84, name: 'Bomb. Nera', price: 500, description: 'Descrizione', image: 'images/bombanera.png' },
+                { id: 85, name: 'Bomb. Rossa', price: 500, description: 'Descrizione', image: 'images/bombarossa.png' },
+            ],
+            acquisto: [
+                { id: 86, name: 'Ferro', price: 5, description: 'Descrizione', image: 'images/ferro.png' },
+                { id: 87, name: 'Rame', price: 10, description: 'Descrizione', image: 'images/rame.png' },
+                { id: 88, name: 'Oro', price: 30, description: 'Descrizione', image: 'images/oro.png' },
+                { id: 89, name: 'Diamante', price: 200, description: 'Descrizione', image: 'images/diamante.png' },
+                { id: 90, name: 'Pesce', price: 10, description: 'Descrizione', image: 'images/pesce.png' },
+                { id: 91, name: 'Pelle', price: 10, description: 'Descrizione', image: 'images/pelle.png' },
+                { id: 92, name: 'Carne Fresca', price: 10, description: 'Descrizione', image: 'images/carnefresca.png' },
+                { id: 93, name: 'Pollo Confezionato', price: 10, description: 'Descrizione', image: 'images/polloconfezionato.png' },
+                { id: 94, name: 'Succo di Uva', price: 10, description: 'Descrizione', image: 'images/succodiuva.png' },
+                { id: 95, name: 'Vino Pregiato', price: 10, description: 'Descrizione', image: 'images/vinopregiato.png' },
+                { id: 96, name: 'Vino', price: 10, description: 'Descrizione', image: 'images/vino.png' },
+            ],
+            vendita: [
+                { id: 97, name: 'Innaffiatoio', price: 10, description: 'Descrizione', image: 'images/innaffiatoio.png' },
+                { id: 98, name: 'Ferro', price: 5, description: 'Descrizione', image: 'images/ferro.png' },
+                { id: 99, name: 'Rame', price: 10, description: 'Descrizione', image: 'images/rame.png' },
+                { id: 100, name: 'Oro', price: 30, description: 'Descrizione', image: 'images/oro.png' },
+                { id: 101, name: 'Diamante', price: 200, description: 'Descrizione', image: 'images/diamante.png' },
+            ]
+        };
+
+        let cart = [];
+
+        function toggleIdentificationFields() {
+            const type = document.getElementById('identificationType').value;
+            const nameFields = document.getElementById('nameFields');
+            const factionFields = document.getElementById('factionFields');
+
+            if (type === 'nameAndSurname') {
+                nameFields.classList.remove('hidden');
+                factionFields.classList.add('hidden');
+            } else if (type === 'faction') {
+                nameFields.classList.add('hidden');
+                factionFields.classList.remove('hidden');
+            } else {
+                nameFields.classList.add('hidden');
+                factionFields.classList.add('hidden');
+            }
+        }
+
+        function filterProducts(category) {
+            const productsContainer = document.getElementById('products');
+            productsContainer.innerHTML = '';
+            
+            products[category].forEach(product => {
+                productsContainer.innerHTML += `
+                    <div class="product-card">
+                        <img src="${product.image}" alt="${product.name}" class="product-image">
+                        <div class="product-info">
+                            <h3 class="product-title">${product.name}</h3>
+                            <p class="product-price">€${product.price.toFixed(2)}</p>
+                            <p class="product-description">${product.description}</p>
+                            <div class="quantity-control">
+                                <button class="quantity-btn" onclick="decrementQuantity(${product.id})">-</button>
+                                <span id="quantity-${product.id}">1</span>
+                                <button class="quantity-btn" onclick="incrementQuantity(${product.id})">+</button>
+                            </div>
+                            <button class="add-to-cart" onclick="addToCart(${product.id}, '${category}')">
+                                Aggiungi al carrello
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function incrementQuantity(productId) {
+            const quantityElement = document.getElementById(`quantity-${productId}`);
+            quantityElement.textContent = parseInt(quantityElement.textContent) + 1;
+        }
+
+        function decrementQuantity(productId) {
+            const quantityElement = document.getElementById(`quantity-${productId}`);
+            const currentQuantity = parseInt(quantityElement.textContent);
+            if (currentQuantity > 1) {
+                quantityElement.textContent = currentQuantity - 1;
+            }
+        }
+
+        function addToCart(productId, category) {
+            const quantity = parseInt(document.getElementById(`quantity-${productId}`).textContent);
+            const product = products[category].find(p => p.id === productId);
+            
+            const existingItem = cart.find(item => item.id === productId);
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({...product, quantity});
+            }
+            
+            updateCart();
+        }
+
+        function updateCart() {
+            const cartItems = document.getElementById('cart-items');
+            const cartTotal = document.getElementById('cart-total');
+            
+            cartItems.innerHTML = '';
+            let total = 0;
+            
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                
+                cartItems.innerHTML += `
+                    <div class="cart-item">
+                        <span>${item.name} x${item.quantity}</span>
+                        <span>€${itemTotal.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            
+            cartTotal.innerHTML = `<strong>Totale: €${total.toFixed(2)}</strong>`;
+        }
+
+        function showOrderForm() {
+            document.getElementById('orderForm').style.display = 'block';
+        }
+
+        function submitOrder() {
+            const identificationType = document.getElementById('identificationType').value;
+            const phone = document.getElementById('phone').value;
+            let identifier = '';
+
+            if (!identificationType || !phone) {
+                alert('Per favore compila tutti i campi');
+                return;
+            }
+
+            if (identificationType === 'nameAndSurname') {
+                identifier = document.getElementById('fullName').value;
+                if (!identifier) {
+                    alert('Per favore inserisci nome e cognome');
+                    return;
+                }
+            } else if (identificationType === 'faction') {
+                identifier = document.getElementById('factionSelect').value;
+                if (!identifier) {
+                    alert('Per favore seleziona una fazione');
+                    return;
+                }
+            }
+
+            const orderDetails = {
+                identificationType,
+                identifier,
+                phone,
+                items: cart,
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+            };
+
+            // Qui inserisci il tuo URL webhook Discord
+            const webhookUrl = 'https://discord.com/api/webhooks/1321412968528744488/NeW5aGXMcFKU7hvR7ON6rM128Z_sLYMJwP74Z0QCsI0qz_p5L0cBSyZLmlbw9vK5yRbN';
+
+            const embed = {
+                title: 'Nuova Ordinazione',
+                color: 5763719,
+                fields: [
+                    {
+                        name: identificationType === 'nameAndSurname' ? 'Nome e Cognome' : 'Fazione',
+                        value: identifier
+                    },
+                    {
+                        name: 'Telefono',
+                        value: phone
+                    },
+                    {
+                        name: 'Prodotti',
+                        value: cart.map(item => `${item.name} x${item.quantity} - €${(item.price * item.quantity).toFixed(2)}`).join('\n')
+                    },
+                    {
+                        name: 'Totale',
+                        value: `€${orderDetails.total.toFixed(2)}`
+                    }
+                ]
+            };
+
+            fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ embeds: [embed] })
+            })
+            .then(() => {
+                alert('Ordine inviato con successo!');
+                cart = [];
+                updateCart();
+                document.getElementById('orderForm').style.display = 'none';
+                document.getElementById('identificationType').value = '';
+                document.getElementById('fullName').value = '';
+                document.getElementById('factionSelect').value = '';
+                document.getElementById('phone').value = '';
+                document.getElementById('nameFields').classList.add('hidden');
+                document.getElementById('factionFields').classList.add('hidden');
+            })
+            .catch(error => {
+                alert('Errore nell\'invio dell\'ordine');
+                console.error('Error:', error);
+            });
+        }
+
+        // Mostra i prodotti McDonald's all'avvio
+        filterProducts('mcdonalds');
+    </script>
+</body>
+</html>
